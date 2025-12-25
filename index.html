@@ -126,24 +126,26 @@
             pageQuestions.forEach((questionBlock, index) => {
                 const lines = questionBlock.split('\n')
                     .map(line => line.trim())
-                    .filter(line => line && !line.match(/{~\d+~}/));
+                    .filter(line => line);
 
                 if (lines.length < 2) return;
 
                 let question = '';
                 let variantsStartIndex = -1;
                 for (let i = 0; i < lines.length; i++) {
-                    if (lines[i].includes('@@')) {
+                    if (lines[i].startsWith('@@')) {
                         variantsStartIndex = i;
                         break;
                     }
-                    question += ' ' + lines[i];
+                    if (!lines[i].match(/\{@[A-E]@\}/)) {
+                        question += '\n' + lines[i];
+                    }
                 }
 
                 if (variantsStartIndex === -1) return;
 
                 const variants = lines.slice(variantsStartIndex)
-                    .filter(line => line.includes('@@'))
+                    .filter(line => line.startsWith('@@'))
                     .map(line => line.replace('@@', '').trim());
 
                 const correctAnswerTag = lines[lines.length - 1];
