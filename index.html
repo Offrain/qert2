@@ -132,13 +132,14 @@
 
                 let question = '';
                 let variantsStartIndex = -1;
+                
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].startsWith('@@')) {
                         variantsStartIndex = i;
                         break;
                     }
                     if (!lines[i].match(/\{@[A-E]@\}/)) {
-                        question += '\n' + lines[i];
+                        question += lines[i] + '<br>';
                     }
                 }
 
@@ -162,7 +163,7 @@
                 questionDiv.id = `q${start + index}`;
 
                 const questionElem = document.createElement('p');
-                questionElem.textContent = `${start + index + 1}. ${question.trim()}`;
+                questionElem.innerHTML = `<strong>${start + index + 1}.</strong> ${question}`;
                 questionDiv.appendChild(questionElem);
 
                 const labels = ['A', 'B', 'C', 'D', 'E'];
