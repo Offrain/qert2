@@ -28,15 +28,6 @@
         .incorrect {
             color: red;
         }
-        .result {
-            margin-top: 20px;
-            font-weight: bold;
-        }
-        button {
-            margin-top: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-        }
         .pagination {
             margin-top: 20px;
             text-align: center;
@@ -50,16 +41,12 @@
             background-color: #007bff;
             color: white;
             border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
-        }
-        .pagination button:hover {
-            cursor: pointer;
-            background-color: #0056b3;
         }
         .shuffle-button {
             display: flex;
             justify-content: center;
-            margin: 20px 0;
+            gap: 10px;
+            flex-wrap: wrap;
         }
         .correct-answer {
             font-weight: bold;
@@ -68,52 +55,38 @@
     </style>
 </head>
 <body>
-    <h1>Тест</h1>
-    <div class="shuffle-button">
-        <button onclick="shuffleQuestions()">Сұрақтарды араластыру</button>
-        <button onclick="shuffleCurrentPageQuestions()">Беттің сұрақтарын араластыру</button>
-        <button onclick="showCorrectAnswers()">Дұрыс жауаптарды көрсету</button>
-        <button onclick="resetAll()">Бастапқыға қайтару</button>
-    </div>
-    <div id="quiz"></div>
-    <div class="pagination" id="pagination"></div>
 
-    <script>
-        let currentPage = 1;
-        const questionsPerPage = 50;
-        let allQuestions = [];
+<h1>Тест</h1>
 
-        async function loadTest() {
-            try {
-                const response = await fetch('test.txt');
-                if (!response.ok) throw new Error(`Файлды жүктеу қателігі: ${response.status}`);
-                const text = await response.text();
+<div class="shuffle-button">
+    <button onclick="shuffleQuestions()">Сұрақтарды араластыру</button>
+    <button onclick="shuffleCurrentPageQuestions()">Бетті араластыру</button>
+    <button onclick="showCorrectAnswers()">Дұрыс жауаптар</button>
+    <button onclick="resetAll()">Қайта бастау</button>
+</div>
 
-                const questions = text.split('~~').filter(q => q.trim());
-                allQuestions = questions;
+<div id="quiz"></div>
+<div class="pagination" id="pagination"></div>
 
-                renderPage(currentPage);
-                renderPagination();
-            } catch (error) {
-                document.getElementById('quiz').textContent = `Қате: ${error.message}`;
-            }
-        }
+<script>
+let currentPage = 1;
+const questionsPerPage = 30;
+let allQuestions = [];
 
-        function shuffleQuestions() {
-            allQuestions = shuffleVariants(allQuestions);
-            currentPage = 1;
-            renderPage(currentPage);
-            renderPagination();
-        }
+async function loadTest() {
+    try {
+        const response = await fetch('test.txt');
+        const text = await response.text();
 
-        function shuffleCurrentPageQuestions() {
-            const start = (currentPage - 1) * questionsPerPage;
-            const end = currentPage * questionsPerPage;
-            const currentQuestions = allQuestions.slice(start, end);
-            const shuffledCurrentQuestions = shuffleVariants(currentQuestions);
-            allQuestions.splice(start, questionsPerPage, ...shuffledCurrentQuestions);
-            renderPage(currentPage);
-        }
+        const questions = text.split('~~').filter(q => q.trim());
+        allQuestions = questions;
+
+        renderPage(currentPage);
+        renderPagination();
+    } catch (error) {
+        document.getElementById('quiz').textContent = 'Қате: ' + error.message;
+    }
+}
 
 function renderPage(page) {
     const quizDiv = document.getElementById('quiz');
@@ -130,10 +103,8 @@ function renderPage(page) {
 
         if (lines.length < 2) return;
 
-        // Убираем номер вопроса (например "1")
         const questionText = lines[0].replace(/^\d+\s*/, '');
 
-        // Варианты и правильный ответ
         let correctVariant = null;
 
         const variants = lines.slice(1).map(line => {
@@ -177,7 +148,7 @@ function renderPage(page) {
         const checkButton = document.createElement('button');
         checkButton.textContent = 'Тексеру';
         checkButton.onclick = function () {
-            checkAnswer(start + index, correctAnswerIndex);
+            checkAnswer(start + index);
         };
 
         const resultDiv = document.createElement('div');
@@ -189,78 +160,88 @@ function renderPage(page) {
     });
 }
 
-        function getCorrectIndex(tag) {
-            const match = tag.match(/\{@([A-E])@\}/);
-            if (match) {
-                return ['A', 'B', 'C', 'D', 'E'].indexOf(match[1]);
-            }
-            return -1;
+function renderPagination() {
+    const paginationDiv = document.getElementById('pagination');
+    paginationDiv.innerHTML = '';
+
+    const totalPages = Math.ceil(allQuestions.length / questionsPerPage);
+
+    for (let i = 1; i <= totalPages; i++) {
+        const button = document.createElement('button');
+        button.textContent = i;
+
+        if (i === currentPage) {
+            button.classList.add('active');
         }
 
-        function renderPagination() {
-            const paginationDiv = document.getElementById('pagination');
-            paginationDiv.innerHTML = '';
+        button.onclick = () => {
+            currentPage = i;
+            renderPage(currentPage);
+            renderPagination();
+        };
 
-            const totalPages = Math.ceil(allQuestions.length / questionsPerPage);
-            for (let i = 1; i <= totalPages; i++) {
-                const button = document.createElement('button');
-                button.textContent = i;
-                button.onclick = () => {
-                    currentPage = i;
-                    renderPage(currentPage);
-                    renderPagination();
-                };
+        paginationDiv.appendChild(button);
+    }
+}
 
-                if (i === currentPage) {
-                    button.classList.add('active');
-                }
-                paginationDiv.appendChild(button);
-            }
-        }
+function shuffleVariants(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
 
-        function shuffleVariants(variants) {
-            const shuffled = [...variants];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-            return shuffled;
-        }
+function shuffleQuestions() {
+    allQuestions = shuffleVariants(allQuestions);
+    currentPage = 1;
+    renderPage(currentPage);
+    renderPagination();
+}
 
-        function checkAnswer(questionIndex) {
-            const selectedOption = document.querySelector(`input[name="q${questionIndex}"]:checked`);
+function shuffleCurrentPageQuestions() {
+    const start = (currentPage - 1) * questionsPerPage;
+    const end = start + questionsPerPage;
 
-            const resultDiv = document.getElementById(`result${questionIndex}`);
-            if (!selectedOption) {
-                resultDiv.textContent = 'Жауап таңдаңыз!';
-                resultDiv.className = 'question-result';
-                resultDiv.style.color = 'orange';
-                return;
-            }
+    const current = allQuestions.slice(start, end);
+    const shuffled = shuffleVariants(current);
 
-            if (selectedOption.value === 'correct') {
-                resultDiv.textContent = 'Дұрыс жауап';
-                resultDiv.className = 'question-result correct';
-            } else {
-                resultDiv.textContent = 'Қате жауап';
-                resultDiv.className = 'question-result incorrect';
-            }
-        }
+    allQuestions.splice(start, current.length, ...shuffled);
+    renderPage(currentPage);
+}
 
-        function showCorrectAnswers() {
-            allQuestions.forEach((_, index) => {
-                const correctLabel = document.querySelector(`#q${index} label[data-correct="true"]`);
-                if (correctLabel) {
-                    correctLabel.classList.add('correct-answer');
-                }
-            });
-        }
+function checkAnswer(index) {
+    const selected = document.querySelector(`input[name="q${index}"]:checked`);
+    const resultDiv = document.getElementById(`result${index}`);
 
-        function resetAll() {
-            loadTest();
-        }
+    if (!selected) {
+        resultDiv.textContent = 'Жауап таңдаңыз!';
+        resultDiv.style.color = 'orange';
+        return;
+    }
 
-        loadTest();
-    </script>
+    if (selected.value === 'correct') {
+        resultDiv.textContent = 'Дұрыс ✅';
+        resultDiv.className = 'question-result correct';
+    } else {
+        resultDiv.textContent = 'Қате ❌';
+        resultDiv.className = 'question-result incorrect';
+    }
+}
+
+function showCorrectAnswers() {
+    document.querySelectorAll('label[data-correct="true"]').forEach(el => {
+        el.classList.add('correct-answer');
+    });
+}
+
+function resetAll() {
+    loadTest();
+}
+
+loadTest();
+</script>
+
 </body>
 </html>
